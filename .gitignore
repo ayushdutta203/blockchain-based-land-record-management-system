@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+data/ledger.json
+uploads/*
+!uploads/.gitkeep
+*.log

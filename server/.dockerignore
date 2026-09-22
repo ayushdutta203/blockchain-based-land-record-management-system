@@ -1,0 +1,6 @@
+node_modules
+.npm-cache
+data/ledger.json
+uploads/*
+!uploads/.gitkeep
+npm-debug.log*

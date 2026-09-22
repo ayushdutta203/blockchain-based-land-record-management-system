@@ -1,0 +1,176 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "createdAt": "2026-09-12T19:54:22.940Z",
+      "name": "District Authority",
+      "email": "authority@landledger.demo",
+      "role": "authority",
+      "passwordHash": "$2a$10$/GONHysxheIMbs5w8oZpwO8/xIOs40pYq/q1x7tnVMgHB8QntBId."
+    },
+    {
+      "id": "2",
+      "createdAt": "2026-09-12T19:54:23.050Z",
+      "name": "Ananya Sharma",
+      "email": "ananya.owner@landledger.demo",
+      "role": "owner",
+      "passwordHash": "$2a$10$YmFCmDu.pQHcGJwVLtzUQOZUCq/dPaDEip5IFSTnHWuTL7IW9aPxG"
+    },
+    {
+      "id": "3",
+      "createdAt": "2026-09-12T19:54:23.206Z",
+      "name": "Rohan Verma",
+      "email": "rohan.buyer@landledger.demo",
+      "role": "buyer",
+      "passwordHash": "$2a$10$md1ep0ttwuCXbLgEAo2sA.AbgSOaasy4rdE33OyUiPvc3fCBcRwRO"
+    },
+    {
+      "id": "4",
+      "createdAt": "2026-09-12T19:54:23.296Z",
+      "name": "Meera Iyer",
+      "email": "meera.seller@landledger.demo",
+      "role": "seller",
+      "passwordHash": "$2a$10$XI/NR7HmDo130fc19VieJexinVVnsjGoOb97JQgyEmqd0FKQaw6Ri"
+    }
+  ],
+  "properties": [
+    {
+      "id": "1",
+      "status": "APPROVED",
+      "documentIds": [],
+      "createdAt": "2026-09-12T19:54:23.297Z",
+      "updatedAt": "2026-09-12T19:54:23.297Z",
+      "parcelNumber": "KA-BLR-1108",
+      "title": "Greenfield Residential Plot",
+      "address": "Survey No. 1108, Whitefield, Bengaluru",
+      "areaSqm": 240,
+      "landType": "Residential",
+      "ownerId": "2",
+      "ownerName": "Ananya Sharma",
+      "createdBy": "2",
+      "approvedBy": "1"
+    },
+    {
+      "id": "2",
+      "status": "APPROVED",
+      "documentIds": [],
+      "createdAt": "2026-09-12T19:54:23.299Z",
+      "updatedAt": "2026-09-12T19:54:23.299Z",
+      "parcelNumber": "KA-BLR-2217",
+      "title": "Lakeview Agricultural Land",
+      "address": "Survey No. 2217, Varthur, Bengaluru",
+      "areaSqm": 1250,
+      "landType": "Agricultural",
+      "ownerId": "4",
+      "ownerName": "Meera Iyer",
+      "createdBy": "4",
+      "approvedBy": "1"
+    },
+    {
+      "id": "3",
+      "status": "PENDING",
+      "documentIds": [],
+      "createdAt": "2026-09-12T19:54:23.300Z",
+      "updatedAt": "2026-09-12T19:54:23.300Z",
+      "parcelNumber": "KA-BLR-1108",
+      "title": "Greenfield Parcel - New Claim",
+      "address": "Survey No. 1108, Whitefield, Bengaluru",
+      "areaSqm": 240,
+      "landType": "Residential",
+      "ownerId": "4",
+      "ownerName": "Meera Iyer",
+      "createdBy": "4",
+      "approvedBy": null
+    }
+  ],
+  "documents": [],
+  "transfers": [],
+  "events": [
+    {
+      "id": "1",
+      "entityType": "PROPERTY",
+      "entityId": "1",
+      "action": "PROPERTY_REGISTERED",
+      "actorId": "2",
+      "timestamp": "2026-09-12T19:54:23.298Z",
+      "payload": {
+        "parcelNumber": "KA-BLR-1108",
+        "ownerId": "2",
+        "status": "APPROVED",
+        "seeded": true
+      },
+      "payloadHash": "78b12123e7be7697698df7fb21328e2b9e73df01c4cb1fc8f834029599c7e62b",
+      "previousHash": "GENESIS",
+      "blockHash": "5dae34a3bad3c85ee99d61029369e1b9e03aa8b891a46bc4bf59a2934dbc1a38"
+    },
+    {
+      "id": "2",
+      "entityType": "PROPERTY",
+      "entityId": "1",
+      "action": "PROPERTY_APPROVED",
+      "actorId": "1",
+      "timestamp": "2026-09-12T19:54:23.298Z",
+      "payload": {
+        "seeded": true
+      },
+      "payloadHash": "297ded4848b5954f9dcc238859d176596fe26bb060bbfed61291472cb3ca0a51",
+      "previousHash": "5dae34a3bad3c85ee99d61029369e1b9e03aa8b891a46bc4bf59a2934dbc1a38",
+      "blockHash": "acbd168b01f72ea7281206a75286f456405420832be8a28874ad6528ae5494d6"
+    },
+    {
+      "id": "3",
+      "entityType": "PROPERTY",
+      "entityId": "2",
+      "action": "PROPERTY_REGISTERED",
+      "actorId": "4",
+      "timestamp": "2026-09-12T19:54:23.299Z",
+      "payload": {
+        "parcelNumber": "KA-BLR-2217",
+        "ownerId": "4",
+        "status": "APPROVED",
+        "seeded": true
+      },
+      "payloadHash": "2f75ac19d8cf6e137c85f2aebbf2cf414befa71d780603d8e15c95b2fb3d0618",
+      "previousHash": "acbd168b01f72ea7281206a75286f456405420832be8a28874ad6528ae5494d6",
+      "blockHash": "5938f4f2b838c524492afff441343b6644c461e1f51eedcb6d2e2303a357ee17"
+    },
+    {
+      "id": "4",
+      "entityType": "PROPERTY",
+      "entityId": "2",
+      "action": "PROPERTY_APPROVED",
+      "actorId": "1",
+      "timestamp": "2026-09-12T19:54:23.300Z",
+      "payload": {
+        "seeded": true
+      },
+      "payloadHash": "297ded4848b5954f9dcc238859d176596fe26bb060bbfed61291472cb3ca0a51",
+      "previousHash": "5938f4f2b838c524492afff441343b6644c461e1f51eedcb6d2e2303a357ee17",
+      "blockHash": "6146f9d82a9cbff2e19f95388547f955355ab617203b2075ba4e8698e506dca7"
+    },
+    {
+      "id": "5",
+      "entityType": "PROPERTY",
+      "entityId": "3",
+      "action": "PROPERTY_REGISTERED",
+      "actorId": "4",
+      "timestamp": "2026-09-12T19:54:23.300Z",
+      "payload": {
+        "parcelNumber": "KA-BLR-1108",
+        "ownerId": "4",
+        "status": "PENDING",
+        "seeded": true
+      },
+      "payloadHash": "f121408437645c3719f8b8ad81e80b7a09c969c4c73660f08c3d9b3bcb73d8b9",
+      "previousHash": "6146f9d82a9cbff2e19f95388547f955355ab617203b2075ba4e8698e506dca7",
+      "blockHash": "1eb819f11efd13fd8d6c67a6586be2874cb059288536da0c9a0d0900822a691b"
+    }
+  ],
+  "nextIds": {
+    "user": 5,
+    "property": 4,
+    "document": 1,
+    "transfer": 1,
+    "event": 6
+  }
+}

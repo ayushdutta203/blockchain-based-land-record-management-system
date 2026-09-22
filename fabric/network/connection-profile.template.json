@@ -1,0 +1,16 @@
+{
+  "name": "land-record-fabric-template",
+  "version": "1.0.0",
+  "client": { "organization": "LandAuthorityMSP" },
+  "channels": {
+    "landchannel": {
+      "peers": { "peer0.landauthority.example.com": { "endorsingPeer": true, "chaincodeQuery": true, "eventSource": true } }
+    }
+  },
+  "organizations": {
+    "LandAuthorityMSP": { "mspid": "LandAuthorityMSP", "peers": ["peer0.landauthority.example.com"] }
+  },
+  "peers": {
+    "peer0.landauthority.example.com": { "url": "grpcs://localhost:7051", "tlsCACerts": { "path": "REPLACE_WITH_CA_CERT_PATH" } }
+  }
+}
