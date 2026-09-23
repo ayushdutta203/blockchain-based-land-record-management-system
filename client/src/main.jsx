@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 const demoAccounts = [
   { label: 'Authority', email: 'authority@landledger.demo', password: 'Authority@123', tone: 'gold' },
   { label: 'Owner', email: 'ananya.owner@landledger.demo', password: 'Owner@123', tone: 'mint' },
