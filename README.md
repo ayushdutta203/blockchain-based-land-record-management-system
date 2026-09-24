@@ -97,3 +97,7 @@ The API test suite verifies login, role restrictions, document hashing, authorit
 - Authorization is enforced on API routes, not only in the UI.
 - Uploaded files are kept off-chain. Only SHA-256 fingerprints and storage references are written to the ledger history.
 - Production deployment requires HTTPS, secret rotation, malware scanning, object-storage encryption, data retention policies, input throttling, and an independent security review.
+
+## Vercel deployment
+
+The frontend is built from `client/`, while API routes are served from `api/`. The login endpoint has an explicit Vercel function at `api/auth/login.mjs` so `POST /api/auth/login` is routed directly to the Express application.
