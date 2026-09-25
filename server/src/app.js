@@ -33,6 +33,21 @@ function createApp({ store, options }) {
   app.post('/api/auth/login', async (req, res, next) => {
     try { res.json(await login(store, req.body.email, req.body.password, options.jwtSecret)); } catch (error) { next(error); }
   });
+
+  app.post('/api/auth/demo-login', async (req, res, next) => {
+    try {
+      if (process.env.DEMO_MODE !== 'true') throw new AppError('Demo access is disabled.', 403, 'DEMO_DISABLED');
+      const demoAccounts = {
+        authority: { email: 'authority@landledger.demo', password: 'Authority@123' },
+        owner: { email: 'ananya.owner@landledger.demo', password: 'Owner@123' },
+        buyer: { email: 'rohan.buyer@landledger.demo', password: 'Buyer@123' },
+        seller: { email: 'meera.seller@landledger.demo', password: 'Seller@123' }
+      };
+      const account = demoAccounts[req.body?.role];
+      if (!account) throw new AppError('Invalid demo role.', 400, 'INVALID_DEMO_ROLE');
+      res.json(await login(store, account.email, account.password, options.jwtSecret));
+    } catch (error) { next(error); }
+  });
   app.get('/api/auth/me', authenticate(options.jwtSecret), async (req, res, next) => {
     try { const user = await store.findUser(req.auth.sub); if (!user) throw new AppError('User account was not found.', 401); res.json({ user: publicUser(user) }); } catch (error) { next(error); }
   });

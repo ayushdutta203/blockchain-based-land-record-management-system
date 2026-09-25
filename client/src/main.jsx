@@ -5,10 +5,10 @@ import './styles.css';
 
 const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 const demoAccounts = [
-  { label: 'Authority', email: 'authority@landledger.demo', password: 'Authority@123', tone: 'gold' },
-  { label: 'Owner', email: 'ananya.owner@landledger.demo', password: 'Owner@123', tone: 'mint' },
-  { label: 'Buyer', email: 'rohan.buyer@landledger.demo', password: 'Buyer@123', tone: 'blue' },
-  { label: 'Seller', email: 'meera.seller@landledger.demo', password: 'Seller@123', tone: 'rose' }
+  { label: 'Authority', email: 'authority@landledger.demo', tone: 'gold', role: 'authority' },
+  { label: 'Owner', email: 'ananya.owner@landledger.demo', tone: 'mint', role: 'owner' },
+  { label: 'Buyer', email: 'rohan.buyer@landledger.demo', tone: 'blue', role: 'buyer' },
+  { label: 'Seller', email: 'meera.seller@landledger.demo', tone: 'rose', role: 'seller' }
 ];
 
 async function request(path, { token, body, headers = {}, ...options } = {}) {
@@ -32,13 +32,18 @@ function Empty({ title, text }) { return <div className="empty"><div className="
 function Toast({ message, kind, onClose }) { if (!message) return null; return <div className={`toast ${kind || ''}`}><span>{kind === 'error' ? '!' : '✓'}</span><p>{message}</p><button onClick={onClose}>×</button></div>; }
 
 function Login({ onLogin }) {
-  const [email, setEmail] = useState(demoAccounts[0].email);
-  const [password, setPassword] = useState(demoAccounts[0].password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event) {
     event.preventDefault(); setBusy(true); setError('');
     try { onLogin(await request('/auth/login', { method: 'POST', body: { email, password } })); }
+    catch (err) { setError(err.message); } finally { setBusy(false); }
+  }
+  async function demoLogin(role) {
+    setBusy(true); setError('');
+    try { onLogin(await request('/auth/demo-login', { method: 'POST', body: { role } })); }
     catch (err) { setError(err.message); } finally { setBusy(false); }
   }
   return <main className="login-shell">
@@ -50,12 +55,12 @@ function Login({ onLogin }) {
     </section>
     <section className="login-card-wrap"><form className="login-card" onSubmit={submit}>
       <p className="eyebrow">WELCOME BACK</p><h2>Sign in to your portal</h2><p className="muted">Use a demo role below or enter account credentials.</p>
-      <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-      <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+      <label>Email<input type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+      <label>Password<input type="password" name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
       {error && <div className="form-error">{error}</div>}
       <button className="primary full" disabled={busy}>{busy ? 'Signing in…' : 'Sign in securely'} <span>→</span></button>
       <div className="demo-divider"><span>demo access</span></div>
-      <div className="role-grid">{demoAccounts.map((account) => <button type="button" className={`role-chip ${account.tone}`} key={account.label} onClick={() => { setEmail(account.email); setPassword(account.password); }}><b>{account.label}</b><small>{account.email.split('@')[0]}</small></button>)}</div>
+      <div className="role-grid">{demoAccounts.map((account) => <button type="button" className={`role-chip ${account.tone}`} key={account.label} onClick={() => demoLogin(account.role)}><b>{account.label}</b><small>{account.email.split('@')[0]}</small></button>)}</div>
     </form></section>
   </main>;
 }

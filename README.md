@@ -101,3 +101,8 @@ The API test suite verifies login, role restrictions, document hashing, authorit
 ## Vercel deployment
 
 The frontend is built from `client/`, while API routes are served from `api/`. The login endpoint has an explicit Vercel function at `api/auth/login.mjs` so `POST /api/auth/login` is routed directly to the Express application.
+
+
+### Login security
+
+The frontend no longer contains demo passwords or pre-fills credentials. Demo role buttons call `/api/auth/demo-login`; this endpoint is disabled unless `DEMO_MODE=true`. For any real/public production system, keep `DEMO_MODE=false` and use real account authentication.
