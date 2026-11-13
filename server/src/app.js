@@ -6,7 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { login, authenticate, allow, publicUser } = require('./services/authService');
 const { overview } = require('./services/analyticsService');
-const { record } = require('./services/ledgerService');
+const { record, evaluate } = require('./services/ledgerService');
 const { AppError } = require('./errors');
 const { required, number, documentMetadata } = require('./utils');
 
@@ -87,7 +87,7 @@ function createApp({ store, options }) {
         fs.writeFileSync(path.join(options.uploadDir, metadata.storageKey), req.file.buffer);
         document = await store.createDocument({ ...metadata, propertyId: property.id, uploadedBy: currentUser.id });
       }
-      await record(store, { entityType: 'PROPERTY', entityId: property.id, action: 'PROPERTY_REGISTERED', actorId: currentUser.id, payload: { parcelNumber: property.parcelNumber, ownerId: property.ownerId, status: property.status, documentHash: document?.sha256 || null } });
+      await record(store, { entityType: 'PROPERTY', entityId: property.id, action: 'PROPERTY_REGISTERED', actorId: currentUser.id, payload: { parcelNumber: property.parcelNumber, title: property.title, address: property.address, areaSqm: property.areaSqm, landType: property.landType, ownerId: property.ownerId, ownerName: property.ownerName, documentHash: document?.sha256 || '0000000000000000000000000000000000000000000000000000000000000000' } }, options);
       res.status(201).json({ property: await propertyView(store, property), message: 'Property submitted for authority review.' });
     } catch (error) { next(error); }
   });
@@ -100,7 +100,7 @@ function createApp({ store, options }) {
       const metadata = documentMetadata(req.file); metadata.storageKey = `${Date.now()}-${crypto.randomUUID()}-${metadata.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       fs.writeFileSync(path.join(options.uploadDir, metadata.storageKey), req.file.buffer);
       const document = await store.createDocument({ ...metadata, propertyId: property.id, uploadedBy: req.auth.sub });
-      await record(store, { entityType: 'DOCUMENT', entityId: document.id, action: 'DOCUMENT_HASHED', actorId: req.auth.sub, payload: { propertyId: property.id, sha256: document.sha256, storageKey: document.storageKey } });
+      await record(store, { entityType: 'DOCUMENT', entityId: document.id, action: 'DOCUMENT_HASHED', actorId: req.auth.sub, payload: { propertyId: property.id, documentHash: document.sha256, uploadedBy: req.auth.sub } }, options);
       res.status(201).json({ document });
     } catch (error) { next(error); }
   });
@@ -109,10 +109,27 @@ function createApp({ store, options }) {
       const property = await store.getProperty(req.params.id);
       if (!property) throw new AppError('Property not found.', 404, 'NOT_FOUND');
       if (!canSeeProperty(property, req.auth)) throw new AppError('You do not have access to this history.', 403, 'FORBIDDEN');
-      const events = await store.eventsFor('PROPERTY', property.id);
-      const transfers = (await store.listTransfers()).filter((item) => item.propertyId === property.id);
-      const transferEvents = (await Promise.all(transfers.map((item) => store.eventsFor('TRANSFER', item.id)))).flat();
-      res.json({ property: await propertyView(store, property), history: [...events, ...transferEvents].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) });
+      let history;
+      if (options.fabricMode === 'fabric') {
+        const identityLabel = options.fabricIdentityMapping[String(req.auth.sub)];
+        if (!identityLabel) throw new AppError('No Fabric identity mapping for current user.', 403, 'FORBIDDEN');
+        const historyResult = await evaluate(identityLabel, options.fabricChaincode, 'GetPropertyHistory', [property.id], options);
+        history = (historyResult || []).map((entry) => ({
+          id: entry.TxID,
+          entityType: 'PROPERTY',
+          entityId: property.id,
+          action: entry.IsDelete ? 'PROPERTY_DELETED' : 'PROPERTY_UPDATED',
+          actorId: 'fabric',
+          timestamp: entry.Timestamp,
+          payload: entry.Record || {},
+        }));
+      } else {
+        const events = await store.eventsFor('PROPERTY', property.id);
+        const transfers = (await store.listTransfers()).filter((item) => item.propertyId === property.id);
+        const transferEvents = (await Promise.all(transfers.map((item) => store.eventsFor('TRANSFER', item.id)))).flat();
+        history = [...events, ...transferEvents].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      }
+      res.json({ property: await propertyView(store, property), history });
     } catch (error) { next(error); }
   });
   app.post('/api/properties/:id/review', authenticate(options.jwtSecret), allow(...roles.authority), async (req, res, next) => {
@@ -122,7 +139,7 @@ function createApp({ store, options }) {
       const decision = required(req.body.decision, 'Review decision').toUpperCase();
       if (!['APPROVED', 'REJECTED'].includes(decision)) throw new AppError('Review decision must be APPROVED or REJECTED.');
       const updated = await store.updateProperty(property.id, { status: decision, approvedBy: req.auth.sub, rejectionReason: decision === 'REJECTED' ? (req.body.reason || 'Authority review rejected.') : null });
-      await record(store, { entityType: 'PROPERTY', entityId: property.id, action: `PROPERTY_${decision}`, actorId: req.auth.sub, payload: { previousStatus: property.status, decision, reason: req.body.reason || null } });
+      await record(store, { entityType: 'PROPERTY', entityId: property.id, action: `PROPERTY_${decision}`, actorId: req.auth.sub, payload: { previousStatus: property.status, decision, reason: req.body.reason || null } }, options);
       res.json({ property: await propertyView(store, updated), message: `Property ${decision.toLowerCase()}.` });
     } catch (error) { next(error); }
   });
@@ -155,7 +172,7 @@ function createApp({ store, options }) {
       const open = (await store.listTransfers()).find((item) => item.propertyId === property.id && ['PROPOSED', 'ACCEPTED'].includes(item.status));
       if (open) throw new AppError('An open transfer already exists for this property.', 409, 'TRANSFER_EXISTS');
       const transfer = await store.createTransfer({ propertyId: property.id, sellerId: req.auth.sub, buyerId: buyer.id, notes: (req.body.notes || '').trim() });
-      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_PROPOSED', actorId: req.auth.sub, payload: { propertyId: property.id, sellerId: req.auth.sub, buyerId: buyer.id } });
+      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_PROPOSED', actorId: req.auth.sub, payload: { propertyId: property.id, sellerId: req.auth.sub, buyerId: buyer.id } }, options);
       res.status(201).json({ transfer, message: 'Transfer proposal sent to buyer.' });
     } catch (error) { next(error); }
   });
@@ -165,7 +182,7 @@ function createApp({ store, options }) {
       if (transfer.buyerId !== String(req.auth.sub)) throw new AppError('Only the designated buyer can accept this transfer.', 403, 'FORBIDDEN');
       if (transfer.status !== 'PROPOSED') throw new AppError('Only a proposed transfer can be accepted.', 409, 'INVALID_TRANSFER_STATE');
       const updated = await store.updateTransfer(transfer.id, { status: 'ACCEPTED', acceptedAt: new Date().toISOString() });
-      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_ACCEPTED', actorId: req.auth.sub, payload: { propertyId: transfer.propertyId, buyerId: req.auth.sub } });
+      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_ACCEPTED', actorId: req.auth.sub, payload: { propertyId: transfer.propertyId, buyerId: req.auth.sub } }, options);
       res.json({ transfer: updated, message: 'Transfer accepted and queued for authority validation.' });
     } catch (error) { next(error); }
   });
@@ -178,8 +195,8 @@ function createApp({ store, options }) {
       const finalizedAt = new Date().toISOString();
       const updatedProperty = await store.updateProperty(property.id, { ownerId: buyer.id, ownerName: buyer.name });
       const updatedTransfer = await store.updateTransfer(transfer.id, { status: 'FINALIZED', authorityId: req.auth.sub, finalizedAt });
-      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_FINALIZED', actorId: req.auth.sub, payload: { propertyId: property.id, priorOwnerId: transfer.sellerId, newOwnerId: buyer.id, finalizedAt } });
-      await record(store, { entityType: 'PROPERTY', entityId: property.id, action: 'OWNERSHIP_TRANSFERRED', actorId: req.auth.sub, payload: { transferId: transfer.id, priorOwnerId: transfer.sellerId, newOwnerId: buyer.id } });
+      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_FINALIZED', actorId: req.auth.sub, payload: { propertyId: property.id, priorOwnerId: transfer.sellerId, newOwnerId: buyer.id, finalizedAt } }, options);
+      await record(store, { entityType: 'PROPERTY', entityId: property.id, action: 'OWNERSHIP_TRANSFERRED', actorId: req.auth.sub, payload: { transferId: transfer.id, priorOwnerId: transfer.sellerId, newOwnerId: buyer.id } }, options);
       res.json({ transfer: updatedTransfer, property: await propertyView(store, updatedProperty), message: 'Ownership transferred after authority validation.' });
     } catch (error) { next(error); }
   });
@@ -190,7 +207,7 @@ function createApp({ store, options }) {
       if (!allowed) throw new AppError('You cannot reject this transfer.', 403, 'FORBIDDEN');
       if (!['PROPOSED', 'ACCEPTED'].includes(transfer.status)) throw new AppError('This transfer has already been resolved.', 409, 'INVALID_TRANSFER_STATE');
       const updated = await store.updateTransfer(transfer.id, { status: 'REJECTED', rejectionReason: req.body.reason || 'Rejected by participant.' });
-      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_REJECTED', actorId: req.auth.sub, payload: { reason: updated.rejectionReason } });
+      await record(store, { entityType: 'TRANSFER', entityId: transfer.id, action: 'TRANSFER_REJECTED', actorId: req.auth.sub, payload: { reason: updated.rejectionReason } }, options);
       res.json({ transfer: updated });
     } catch (error) { next(error); }
   });

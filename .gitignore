@@ -5,3 +5,4 @@ data/ledger.json
 uploads/*
 !uploads/.gitkeep
 *.log
+fabric/wallet/

@@ -91,13 +91,13 @@ class MockStore {
     Object.assign(item, changes, { updatedAt: new Date().toISOString() }); this.save(); return item;
   }
 
-  async appendEvent({ entityType, entityId, action, actorId, payload }) {
+  async appendEvent({ entityType, entityId, action, actorId, payload, blockchainStatus = 'confirmed', fabricTxId = null }) {
     const timestamp = new Date().toISOString();
     const prior = this.data.events.at(-1);
     const payloadHash = digest(stable(payload || {}));
     const previousHash = prior ? prior.blockHash : 'GENESIS';
     const blockHash = digest(`${previousHash}|${entityType}|${entityId}|${action}|${actorId}|${timestamp}|${payloadHash}`);
-    const item = { id: this.next('event'), entityType, entityId: String(entityId), action, actorId: String(actorId), timestamp, payload: payload || {}, payloadHash, previousHash, blockHash };
+    const item = { id: this.next('event'), entityType, entityId: String(entityId), action, actorId: String(actorId), timestamp, payload: payload || {}, payloadHash, previousHash, blockHash, blockchainStatus, fabricTxId };
     this.data.events.push(item); this.save(); return item;
   }
   async eventsFor(entityType, entityId) { return this.data.events.filter((item) => item.entityType === entityType && item.entityId === String(entityId)); }
